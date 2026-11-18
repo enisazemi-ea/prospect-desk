@@ -223,16 +223,15 @@ function asNumber(value: unknown): number | undefined {
 /** Pull the model's JSON out of an Anthropic Messages response. */
 function readJudgement(payload: unknown): FitJudgement {
   const message = unwrap(payload)
-  const content = message?.content
-  const firstBlock = Array.isArray(content) ? asRecord(content[0]) : undefined
-  const text = asText(firstBlock?.text)
+  const text = readText(message?.content)
 
   if (!text) {
-    // Name the keys that did arrive. A failed card is read by whoever is
-    // adding the next integration, and "nothing to read" on its own sends
+    // Name the block types that did arrive. A failed card is read by whoever
+    // is adding the next integration, and "nothing to read" on its own sends
     // them to the logs for something the card could have told them.
-    const keys = Object.keys(message ?? {}).join(', ') || 'none'
-    throw new Error(`The scoring model returned nothing to read. Keys in the reply: ${keys}`)
+    throw new Error(
+      `The scoring model returned no text. Blocks in the reply: ${describeContent(message?.content)}`,
+    )
   }
 
   // Models occasionally wrap JSON in a code fence or a sentence, so take the
@@ -254,6 +253,36 @@ function readJudgement(payload: unknown): FitJudgement {
     reason: asText(parsed?.reason) ?? '',
     angle: asText(parsed?.angle) ?? '',
   }
+}
+
+/**
+ * Read the model's words out of a Messages reply.
+ *
+ * `content` is a list of blocks, and a text block is not guaranteed to be the
+ * first one: a reply can open with a thinking block or a tool block depending
+ * on the model and the settings. So this takes the first block that actually
+ * carries text rather than assuming position zero, and accepts a plain string
+ * for the shape some gateways flatten to.
+ */
+function readText(content: unknown): string | undefined {
+  if (typeof content === 'string') return asText(content)
+  if (!Array.isArray(content)) return undefined
+
+  for (const block of content) {
+    const text = asText(asRecord(block)?.text)
+    if (text) return text
+  }
+
+  return undefined
+}
+
+/** A short description of a reply's blocks, for a failure message. */
+function describeContent(content: unknown): string {
+  if (typeof content === 'string') return 'a string with no text in it'
+  if (!Array.isArray(content)) return `not a list (${typeof content})`
+  if (content.length === 0) return 'an empty list'
+
+  return content.map((block) => String(asRecord(block)?.type ?? 'unknown')).join(', ')
 }
 
 /**
