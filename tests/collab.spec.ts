@@ -131,3 +131,41 @@ test('API status page shows local retry after first-load API failure', async ({ 
   await expect.poll(() => requestCount).toBeGreaterThan(requestsAfterFailure)
   expect(user.page.url()).toBe(urlAfterFailure)
 })
+
+/**
+ * The reason the board is shared rather than per person.
+ *
+ * Two people working the same prospect list is the normal case, and the
+ * expensive mistake is both of them reviewing and emailing the same site. This
+ * proves a campaign one person creates reaches the other without a reload.
+ */
+test('a campaign one person creates appears for the other', async ({ users }) => {
+  const [author, colleague] = await users(2)
+
+  // A name unique to this run, so a pool shared across runs cannot make the
+  // assertion pass on somebody else's leftover record.
+  const campaignName = `Sync check ${Date.now()}`
+
+  await Promise.all([author.page.goto('/home'), colleague.page.goto('/home')])
+  for (const user of [author, colleague]) {
+    await expect(user.page.getByTestId('app-navigation')).toBeVisible({ timeout: 15_000 })
+  }
+
+  await author.page.getByRole('button', { name: 'New campaign' }).click()
+  await author.page.getByLabel('Campaign').fill(campaignName)
+  await author.page.getByLabel('Client site').fill('riversidedental.com')
+  await author.page
+    .getByLabel('What the client is about')
+    .fill('Family dentistry and orthodontics in Sacramento')
+  await author.page.getByRole('button', { name: 'Create campaign' }).click()
+
+  await expect(author.page.getByRole('heading', { name: campaignName })).toBeVisible({
+    timeout: 15_000,
+  })
+
+  // No reload on this side. If it only appears after one, the board is not
+  // shared, it is two copies that happen to agree.
+  await expect(colleague.page.getByRole('heading', { name: campaignName })).toBeVisible({
+    timeout: 15_000,
+  })
+})

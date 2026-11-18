@@ -69,3 +69,53 @@ test.describe('Smoke tests', () => {
     await expect(page.locator('text=404')).toBeVisible()
   })
 })
+
+/**
+ * Product checks, as opposed to the template checks above.
+ *
+ * These exist to catch the specific way a scaffolded app rots: the shell keeps
+ * working, the tests keep passing, and the pages still say what the generator
+ * put there. Each assertion below names something only this product would say.
+ */
+test.describe('Prospect Desk', () => {
+  const SCAFFOLD_COPY = [
+    'A DeepSpace app with a static front door',
+    'This is a placeholder page',
+    'Your DeepSpace app is running',
+  ]
+
+  test('landing leads with what the product decides', async ({ page }) => {
+    await page.goto('/')
+    await expect(
+      page.getByRole('heading', { name: 'Decide which sites deserve the pitch' }),
+    ).toBeVisible()
+    await expect(page).toHaveTitle(/Prospect Desk/)
+  })
+
+  test('no scaffold copy survives on the landing or the home page', async ({ page }) => {
+    for (const path of ['/', '/home']) {
+      await page.goto(path)
+      await waitForApp(page)
+      const body = await page.locator('body').innerText()
+      for (const phrase of SCAFFOLD_COPY) {
+        expect(body, `${path} still shows scaffold copy`).not.toContain(phrase)
+      }
+    }
+  })
+
+  test('home shows the campaign list and its primary action', async ({ page }) => {
+    await page.goto('/home')
+    await expect(page.getByRole('heading', { name: 'Prospect desk' })).toBeVisible({
+      timeout: 15000,
+    })
+    await expect(
+      page.getByRole('button', { name: 'Sign in to start a campaign' }).first(),
+    ).toBeVisible()
+  })
+
+  test('the primary action opens a dialog rather than doing nothing', async ({ page }) => {
+    await page.goto('/home')
+    await page.getByRole('button', { name: 'Sign in to start a campaign' }).first().click()
+    await expect(page.getByRole('dialog')).toBeVisible({ timeout: 10000 })
+  })
+})
