@@ -17,27 +17,35 @@
  * they stay consistent across every preset.
  */
 @theme {
-  /* shadcn core tokens — slate (default): neutral gray on near-black, indigo accent */
-  --color-background: #0a0a0a;
-  --color-foreground: #e8eaed;
-  --color-card: #161616;
-  --color-card-foreground: #e8eaed;
-  --color-popover: #161616;
-  --color-popover-foreground: #e8eaed;
-  --color-primary: #818cf8;
-  --color-primary-foreground: #ffffff;
-  --color-secondary: #1e1e1e;
-  --color-secondary-foreground: #e8eaed;
-  --color-muted: #1e1e1e;
-  --color-muted-foreground: #9ca3af;
-  --color-accent: #262626;
-  --color-accent-foreground: #e8eaed;
-  --color-destructive: #ef4444;
-  --color-destructive-foreground: #ffffff;
-  --color-border: rgba(60, 64, 67, 0.6);
-  --color-input: rgba(60, 64, 67, 0.6);
-  --color-ring: #818cf8;
-  --radius: 0.5rem;
+  /* Newsprint — the app's own theme, and the only one the product ships with.
+     Ink on warm paper, one burnt-orange signal used for the fit score and for
+     anything the reader is meant to act on. The job here is reading pages and
+     judging them, so the surface behaves like paper rather than a console. */
+  --color-background: #faf8f4;
+  --color-foreground: #1b1a17;
+  --color-card: #ffffff;
+  --color-card-foreground: #1b1a17;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #1b1a17;
+  --color-primary: #9e4718;
+  --color-primary-foreground: #fffaf5;
+  --color-secondary: #efeae1;
+  --color-secondary-foreground: #1b1a17;
+  --color-muted: #efeae1;
+  --color-muted-foreground: #64604f;
+  --color-accent: #e7e1d6;
+  --color-accent-foreground: #1b1a17;
+  --color-destructive: #9a2d1c;
+  --color-destructive-foreground: #fffaf5;
+  --color-border: #ded6c6;
+  --color-input: #ded6c6;
+  --color-ring: #9e4718;
+  --radius: 0.25rem;
+
+  /* Fraunces for anything that acts as a headline, Inter for everything
+     read at length. Loaded in index.html. */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
 
   /*
    * Map the rounded-* utilities onto --radius so a theme (or you) can change
@@ -88,8 +96,8 @@
      simply doesn't reference them. In every theme keep the panel reading as
      elevated: dark → panel lighter than shell; light → white panel on a
      faintly darker shell. */
-  --color-shell: #0a0a0a;
-  --color-shell-panel: #161616;
+  --color-shell: #f2eee6;
+  --color-shell-panel: #ffffff;
 
   /* Animations */
   --animate-pulse-glow: pulse-glow 2s ease-in-out infinite;
@@ -152,9 +160,9 @@
  */
 @layer base {
   html {
-    /* Default to dark for native form controls (calendar icons, scrollbars).
-     * Light themes opt into `color-scheme: light` in themes.css. */
-    color-scheme: dark;
+    /* Newsprint is a light theme, so native controls follow it. The dark
+     * alternate in themes.css sets its own. */
+    color-scheme: light;
   }
 
   html, body, #root {
@@ -164,7 +172,7 @@
   }
 
   body {
-    font-family: 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: var(--font-sans);
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
