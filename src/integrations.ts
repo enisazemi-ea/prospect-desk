@@ -26,5 +26,14 @@ export const integrations: Record<
 > = {
   google: { billing: 'user' },
   composio: { billing: 'user' },
-  // openai: { billing: 'developer', anonymous: true },
+
+  // The four providers a prospect review is made of. All owner-billed,
+  // because a review is the app's work and the result belongs to the whole
+  // board rather than to whoever happened to press the button. None of them
+  // allow anonymous callers: a signed-out visitor who could run a review
+  // could run the owner's bill up one paste at a time.
+  firecrawl: { billing: 'developer' },
+  dataforseo: { billing: 'developer' },
+  anthropic: { billing: 'developer' },
+  anymailfinder: { billing: 'developer' },
 }
