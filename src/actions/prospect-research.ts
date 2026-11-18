@@ -56,7 +56,7 @@ export async function readPage(tools: IntegrationCaller, url: string): Promise<P
     throw new Error(response.error ?? 'The page could not be read.')
   }
 
-  const payload = asRecord(asRecord(response.data)?.data)
+  const payload = unwrap(response.data)
   const metadata = asRecord(payload?.metadata)
   const markdown = typeof payload?.markdown === 'string' ? payload.markdown : ''
 
@@ -92,8 +92,7 @@ export async function readBacklinkProfile(
     throw new Error(response.error ?? 'The backlink profile could not be read.')
   }
 
-  const result = asRecord(response.data)?.result
-  const summary = asRecord(Array.isArray(result) ? result[0] : result)
+  const summary = unwrap(response.data)
 
   return {
     referringDomains: asNumber(summary?.referring_domains),
@@ -184,6 +183,25 @@ export async function findContactEmail(
  * Reading untyped provider payloads
  * ---------------------------------------------------------------------- */
 
+/**
+ * Take the provider's own payload out of the platform's envelope.
+ *
+ * The envelope is consistent in spirit and not in naming: some endpoints put
+ * the provider's answer under `data` and others under `result`, alongside the
+ * billing fields. A list of one is unwrapped too, which is how DataForSEO
+ * answers a single-target request. Doing this once keeps every reader above
+ * written against the provider's shape rather than the platform's.
+ */
+function unwrap(value: unknown): Record<string, unknown> | undefined {
+  const envelope = asRecord(value)
+  if (!envelope) return undefined
+
+  const inner = envelope.data ?? envelope.result ?? envelope
+  const unpacked = Array.isArray(inner) ? inner[0] : inner
+
+  return asRecord(unpacked) ?? asRecord(envelope)
+}
+
 function asRecord(value: unknown): Record<string, unknown> | undefined {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
     ? (value as Record<string, unknown>)
@@ -204,11 +222,18 @@ function asNumber(value: unknown): number | undefined {
 
 /** Pull the model's JSON out of an Anthropic Messages response. */
 function readJudgement(payload: unknown): FitJudgement {
-  const content = asRecord(payload)?.content
+  const message = unwrap(payload)
+  const content = message?.content
   const firstBlock = Array.isArray(content) ? asRecord(content[0]) : undefined
   const text = asText(firstBlock?.text)
 
-  if (!text) throw new Error('The scoring model returned nothing to read.')
+  if (!text) {
+    // Name the keys that did arrive. A failed card is read by whoever is
+    // adding the next integration, and "nothing to read" on its own sends
+    // them to the logs for something the card could have told them.
+    const keys = Object.keys(message ?? {}).join(', ') || 'none'
+    throw new Error(`The scoring model returned nothing to read. Keys in the reply: ${keys}`)
+  }
 
   // Models occasionally wrap JSON in a code fence or a sentence, so take the
   // outermost braces rather than parsing the whole reply.
