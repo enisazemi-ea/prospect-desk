@@ -1,0 +1,81 @@
+﻿node.exe : npm notice run prospect-desk@0.0.1 npx
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Users\enis_\AppData\Roaming\ ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (npm notice run prospect-desk@0.0.1 npx:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+npm notice run ^"deepspace^" integrations info dataforseo/backlinks-summary
+dataforseo/backlinks-summary
+  Get an aggregate backlink profile summary for a domain, subdomain, or URL. Free-tier pricing differs from paid-tier pricing.
+  billing: metered at the provider's actual cost plus platform markup; free-tier pricing differs
+
+Input schema:
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "target": {
+      "type": "string",
+      "minLength": 1
+    },
+    "include_subdomains": {
+      "type": "boolean"
+    },
+    "include_indirect_links": {
+      "type": "boolean"
+    },
+    "exclude_internal_backlinks": {
+      "type": "boolean"
+    },
+    "backlinks_status_type": {
+      "type": "string",
+      "enum": [
+        "all",
+        "live",
+        "lost"
+      ]
+    },
+    "rank_scale": {
+      "type": "string",
+      "enum": [
+        "one_hundred",
+        "one_thousand"
+      ]
+    },
+    "internal_list_limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000
+    },
+    "backlinks_filters": {
+      "type": "array",
+      "items": {}
+    }
+  },
+  "required": [
+    "target"
+  ]
+}
+
+Example body:
+{
+  "target": "<string>"
+}
+
+Output schema:
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "result": {},
+    "costUsd": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "result",
+    "costUsd"
+  ],
+  "additionalProperties": false
+}

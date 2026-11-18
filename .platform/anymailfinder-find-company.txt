@@ -1,0 +1,39 @@
+﻿node.exe : npm notice run prospect-desk@0.0.1 npx
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Users\enis_\AppData\Roaming\ ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (npm notice run prospect-desk@0.0.1 npx:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+npm notice run ^"deepspace^" integrations info anymailfinder/find-company
+anymailfinder/find-company
+  Find a company's email addresses by domain or company name; a credit is charged only when a valid email is found.
+  billing: metered at the provider's actual cost plus platform markup
+
+Input schema:
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "domain": {
+      "type": "string"
+    },
+    "company_name": {
+      "type": "string"
+    },
+    "email_type": {
+      "default": "any",
+      "type": "string",
+      "enum": [
+        "any",
+        "generic",
+        "personal"
+      ]
+    }
+  }
+}
+
+Example body:
+{
+  "email_type": "any"
+}

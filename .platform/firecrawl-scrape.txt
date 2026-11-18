@@ -1,0 +1,85 @@
+﻿node.exe : npm notice run prospect-desk@0.0.1 npx
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Users\enis_\AppData\Roaming\ ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (npm notice run prospect-desk@0.0.1 npx:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+npm notice run ^"deepspace^" integrations info firecrawl/scrape
+firecrawl/scrape
+  Scrape a single URL and return its content in the requested formats, billed at the credits used.
+  billing: metered at the provider's actual cost plus platform markup
+
+Input schema:
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "url": {
+      "type": "string"
+    },
+    "formats": {
+      "default": [
+        "markdown"
+      ],
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "onlyMainContent": {
+      "default": true,
+      "type": "boolean"
+    },
+    "includeTags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "excludeTags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "waitFor": {
+      "type": "number"
+    },
+    "timeout": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "url"
+  ]
+}
+
+Example body:
+{
+  "formats": [
+    "markdown"
+  ],
+  "onlyMainContent": true
+}
+
+Output schema:
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "data": {},
+    "creditsUsed": {
+      "type": "number"
+    },
+    "costUsd": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "data",
+    "creditsUsed",
+    "costUsd"
+  ],
+  "additionalProperties": false
+}
