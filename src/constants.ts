@@ -1,5 +1,13 @@
-/** App name — replaced by the CLI during scaffolding */
+/** App name — replaced by the CLI during scaffolding. This is the deployment
+ *  slug, so it stays lowercase and hyphenated; APP_TITLE is what people read. */
 export const APP_NAME = 'prospect-desk'
+
+/** The product's name as it appears in the interface and in search results. */
+export const APP_TITLE = 'Prospect Desk'
+
+/** One sentence, used in the nav, the landing page head tags and link previews. */
+export const APP_TAGLINE =
+  'A shared board for deciding which sites a link building campaign should pitch.'
 
 /** Immutable app identity — data scope keys to this, so renames never
  *  strand your records.
