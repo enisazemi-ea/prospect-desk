@@ -1,10 +1,11 @@
 /* home pattern: data-forward — the campaign list above the fold, with the counts that decide where the afternoon goes */
 
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { AuthOverlay, useAuth, useMutations, useQuery } from 'deepspace'
 import { FolderOpen } from 'lucide-react'
 import { Button, EmptyState, Input, Label, Modal, useToast } from '@/components/ui'
+import { callAction } from '@/lib/call-action'
 import type { Campaign, Prospect } from '@/lib/records'
 
 export default function HomePage() {
@@ -13,6 +14,24 @@ export default function HomePage() {
   const prospects = useQuery<Prospect>('prospects')
   const [isCreating, setIsCreating] = useState(false)
   const [showSignIn, setShowSignIn] = useState(false)
+  const [loadingSample, setLoadingSample] = useState(false)
+  const navigate = useNavigate()
+  const { error } = useToast()
+
+  // A first-time visitor should be able to see the product work before
+  // deciding to type anything into it, so the empty state offers a campaign
+  // with real candidate pages already in it.
+  async function loadSample() {
+    setLoadingSample(true)
+    try {
+      const { campaignId } = await callAction<{ campaignId: string }>('loadSampleCampaign')
+      navigate(`/campaigns/${campaignId}`)
+    } catch (e) {
+      error('Could not load the sample', e instanceof Error ? e.message : undefined)
+    } finally {
+      setLoadingSample(false)
+    }
+  }
 
   const loading = campaigns.status === 'loading'
 
@@ -44,8 +63,12 @@ export default function HomePage() {
             <EmptyState
               icon={<FolderOpen />}
               title="No campaigns yet"
-              description="A campaign is one client and one topic. Everything you paste into it gets scored against that topic."
+              description="A campaign is one client and one topic. Everything you paste into it gets scored against that topic. If you would rather see it working first, the sample arrives with four real candidate pages waiting to be reviewed."
               action={{ label: 'New campaign', onClick: () => setIsCreating(true) }}
+              secondaryAction={{
+                label: loadingSample ? 'Loading sample…' : 'Load a sample campaign',
+                onClick: loadSample,
+              }}
             />
           ) : (
             <ul className="divide-y divide-border border-y border-border">

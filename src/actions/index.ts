@@ -1,5 +1,6 @@
 import type { ActionHandler } from 'deepspace/worker'
 import type { Env } from '../../worker'
+import { loadSampleCampaign } from './load-sample-campaign'
 import { reviewProspect } from './review-prospect'
 
 /**
@@ -10,5 +11,6 @@ import { reviewProspect } from './review-prospect'
  * answer for everyone looking at a board.
  */
 export const actions: Record<string, ActionHandler<Env>> = {
+  loadSampleCampaign,
   reviewProspect,
 }
