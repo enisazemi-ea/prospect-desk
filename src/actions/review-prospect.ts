@@ -28,7 +28,7 @@ export const reviewProspect: ActionHandler<Env> = async ({ params, tools, userId
   const caller = await tools.get('users', userId)
   if (!caller.success) return caller
 
-  const role = (caller.data as { record: { data: { role?: string } } }).record.data.role
+  const { role } = fieldsOf<{ role?: string }>(caller.data)
   if (role !== 'member' && role !== 'admin') {
     return { success: false, error: 'Only members of this desk can run a review.' }
   }
@@ -36,14 +36,12 @@ export const reviewProspect: ActionHandler<Env> = async ({ params, tools, userId
   const found = await tools.get('prospects', prospectId)
   if (!found.success) return found
 
-  const prospect = (found.data as { record: { data: Prospect } }).record.data
+  const prospect = fieldsOf<Prospect>(found.data)
 
   const campaign = await tools.get('campaigns', prospect.campaignId)
   if (!campaign.success) return campaign
 
-  const { topic, clientSite } = (
-    campaign.data as { record: { data: { topic: string; clientSite: string } } }
-  ).record.data
+  const { topic, clientSite } = fieldsOf<{ topic: string; clientSite: string }>(campaign.data)
 
   // Flip the card into its running state first, so anyone else on the board
   // can see the review is already under way and does not start it again.
@@ -90,4 +88,17 @@ export const reviewProspect: ActionHandler<Env> = async ({ params, tools, userId
 
     return { success: false, error: reason }
   }
+}
+
+/**
+ * Read a record's fields out of a `tools.get` result.
+ *
+ * The tools API answers with `Record<string, unknown>`, because the worker has
+ * no view of the app's schemas at the type level. The schema in src/schemas is
+ * what actually guarantees the shape, so this is the single place that states
+ * it, rather than a cast at every call site.
+ */
+function fieldsOf<T>(data: unknown): T {
+  const record = (data as { record?: { data?: unknown } } | null)?.record
+  return (record?.data ?? {}) as T
 }
