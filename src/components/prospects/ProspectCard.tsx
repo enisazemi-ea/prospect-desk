@@ -3,6 +3,7 @@ import { useMutations } from 'deepspace'
 import { ExternalLink, Mail, RotateCw } from 'lucide-react'
 import { Badge, Button, useToast } from '@/components/ui'
 import { callAction } from '@/lib/call-action'
+import { overallScore } from '@/lib/prospect-score'
 import type { Prospect } from '@/lib/records'
 import type { ProspectStatus } from '@/schemas/prospects-schema'
 
@@ -13,6 +14,10 @@ import type { ProspectStatus } from '@/schemas/prospects-schema'
  * is, how strong it is, whether it fits, what you would say, and who you would
  * say it to. The score sits in the corner as a large numeral because it is the
  * thing the eye should land on first when scanning twenty of these.
+ *
+ * That numeral combines the topical fit with the domain's authority, and the
+ * two parts stay visible in the row underneath. Nobody should have to take a
+ * single number on trust when the inputs are right there.
  */
 export function ProspectCard({ id, prospect }: { id: string; prospect: Prospect }) {
   const { put } = useMutations<Prospect>('prospects')
@@ -62,15 +67,19 @@ export function ProspectCard({ id, prospect }: { id: string; prospect: Prospect 
           )}
         </div>
 
-        <FitScore score={prospect.fitScore} running={running} />
+        <OverallScore
+          score={overallScore(prospect.fitScore, prospect.domainRank)}
+          running={running}
+        />
       </div>
 
       {reviewed && (
         <>
           <dl className="mt-4 flex flex-wrap gap-x-8 gap-y-2 border-t border-border pt-4 text-sm">
+            <Metric label="Topical fit" value={prospect.fitScore} />
+            <Metric label="Domain rank" value={prospect.domainRank} />
             <Metric label="Referring domains" value={prospect.referringDomains} />
             <Metric label="Backlinks" value={prospect.backlinks} />
-            <Metric label="Domain rank" value={prospect.domainRank} />
           </dl>
 
           {prospect.fitReason && (
@@ -145,7 +154,7 @@ export function ProspectCard({ id, prospect }: { id: string; prospect: Prospect 
 }
 
 /** The large numeral in the corner. Unscored prospects show a dash, not a zero. */
-function FitScore({ score, running }: { score?: number; running: boolean }) {
+function OverallScore({ score, running }: { score?: number; running: boolean }) {
   if (running) {
     return (
       <div className="shrink-0 text-right">
@@ -168,7 +177,7 @@ function FitScore({ score, running }: { score?: number; running: boolean }) {
       >
         {hasScore ? score : '—'}
       </p>
-      <p className="mt-1 text-xs uppercase tracking-wide text-muted-foreground">fit</p>
+      <p className="mt-1 text-xs uppercase tracking-wide text-muted-foreground">score</p>
     </div>
   )
 }
