@@ -38,16 +38,14 @@ export default function HomePage() {
         <section className="mt-12">
           {loading ? (
             <CampaignListSkeleton />
+          ) : campaigns.records.length === 0 && !isSignedIn ? (
+            <SampleBoard onSignIn={() => setShowSignIn(true)} />
           ) : campaigns.records.length === 0 ? (
             <EmptyState
               icon={<FolderOpen />}
               title="No campaigns yet"
               description="A campaign is one client and one topic. Everything you paste into it gets scored against that topic."
-              action={
-                isSignedIn
-                  ? { label: 'New campaign', onClick: () => setIsCreating(true) }
-                  : { label: 'Sign in to start a campaign', onClick: () => setShowSignIn(true) }
-              }
+              action={{ label: 'New campaign', onClick: () => setIsCreating(true) }}
             />
           ) : (
             <ul className="divide-y divide-border border-y border-border">
@@ -110,6 +108,52 @@ function Count({ label, value }: { label: string; value: number }) {
     <div className="text-right">
       <dt className="text-xs uppercase tracking-wide text-muted-foreground">{label}</dt>
       <dd className="font-display text-2xl font-semibold tabular-nums">{value}</dd>
+    </div>
+  )
+}
+
+/**
+ * What a signed-out visitor sees.
+ *
+ * An empty page with a sign-in button tells someone nothing about whether the
+ * tool is worth signing in for. These are two made-up campaigns in the exact
+ * shape of real ones, labelled as examples so nobody mistakes them for data.
+ */
+function SampleBoard({ onSignIn }: { onSignIn: () => void }) {
+  const examples = [
+    { name: 'Riverside Dental, spring links', topic: 'Family dentistry and orthodontics in Sacramento', total: 48, waiting: 9, shortlisted: 14 },
+    { name: 'Northvale Outdoors, Q1', topic: 'Hiking and camping gear for cold weather', total: 112, waiting: 0, shortlisted: 31 },
+  ]
+
+  return (
+    <div>
+      <p className="mb-4 text-xs uppercase tracking-wide text-muted-foreground">
+        An example of what a desk looks like
+      </p>
+
+      <ul className="divide-y divide-border border-y border-border opacity-70">
+        {examples.map((example) => (
+          <li
+            key={example.name}
+            className="flex flex-wrap items-baseline justify-between gap-x-8 gap-y-2 py-5"
+          >
+            <div className="min-w-0">
+              <h2 className="font-display text-xl font-semibold">{example.name}</h2>
+              <p className="mt-1 truncate text-sm text-muted-foreground">{example.topic}</p>
+            </div>
+            <dl className="flex shrink-0 items-baseline gap-6 text-sm">
+              <Count label="prospects" value={example.total} />
+              <Count label="to review" value={example.waiting} />
+              <Count label="shortlisted" value={example.shortlisted} />
+            </dl>
+          </li>
+        ))}
+      </ul>
+
+      <div className="mt-6 flex items-center gap-4">
+        <Button onClick={onSignIn}>Sign in to start a campaign</Button>
+        <p className="text-sm text-muted-foreground">Your campaigns are private to your desk.</p>
+      </div>
     </div>
   )
 }
