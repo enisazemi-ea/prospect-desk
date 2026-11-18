@@ -47,29 +47,32 @@ export default function CampaignBoardPage() {
 
   async function reviewEveryUnreviewed() {
     setReviewingAll(true)
-    let done = 0
-    let failed = 0
+    let queued = 0
+    let refused = 0
 
-    // One at a time rather than all at once: each prospect costs four
-    // third-party calls, and a burst of them is how you discover a rate limit
-    // with somebody's budget.
+    // Each call only enqueues a job, so this returns in about as long as the
+    // requests take. The reviews themselves run in the background and the
+    // cards fill in as each one lands.
     for (const row of unreviewed) {
       try {
         await callAction('reviewProspect', { prospectId: row.recordId })
-        done += 1
+        queued += 1
       } catch {
-        failed += 1
+        refused += 1
       }
     }
 
     setReviewingAll(false)
 
-    if (failed === 0) {
-      success(`Reviewed ${done} ${done === 1 ? 'prospect' : 'prospects'}`)
+    if (refused === 0) {
+      success(
+        `${queued} ${queued === 1 ? 'review' : 'reviews'} queued`,
+        'The cards fill in as each one finishes. You can leave this page.',
+      )
     } else {
       error(
-        `Reviewed ${done}, ${failed} failed`,
-        'The cards that failed say why, and can be retried one at a time.',
+        `${queued} queued, ${refused} refused`,
+        'The cards that were refused say why, and can be retried one at a time.',
       )
     }
   }

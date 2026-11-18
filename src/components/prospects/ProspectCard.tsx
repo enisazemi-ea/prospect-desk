@@ -22,19 +22,22 @@ import type { ProspectStatus } from '@/schemas/prospects-schema'
 export function ProspectCard({ id, prospect }: { id: string; prospect: Prospect }) {
   const { put } = useMutations<Prospect>('prospects')
   const { error } = useToast()
-  const [reviewing, setReviewing] = useState(false)
+  const [queueing, setQueueing] = useState(false)
 
   const reviewed = prospect.reviewState === 'done'
-  const running = prospect.reviewState === 'running' || reviewing
+  // `queueing` only covers the moment between the click and the record
+  // arriving back as running. After that the record is the truth, which is
+  // what lets a colleague's review show as running on this screen too.
+  const running = prospect.reviewState === 'running' || queueing
 
   async function review() {
-    setReviewing(true)
+    setQueueing(true)
     try {
       await callAction('reviewProspect', { prospectId: id })
     } catch (e) {
-      error('Review failed', e instanceof Error ? e.message : undefined)
+      error('Could not queue the review', e instanceof Error ? e.message : undefined)
     } finally {
-      setReviewing(false)
+      setQueueing(false)
     }
   }
 

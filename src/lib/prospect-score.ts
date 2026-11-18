@@ -12,8 +12,7 @@
  * site is still worth having.
  */
 
-const FIT_WEIGHT = 0.65
-const AUTHORITY_WEIGHT = 0.35
+import { SCORE_WEIGHTS } from '@/config'
 
 /**
  * The number shown on the card, 0 to 100.
@@ -28,7 +27,7 @@ export function overallScore(fit?: number, domainRank?: number): number | undefi
   if (typeof domainRank !== 'number') return clamp(Math.round(fit))
   if (fit <= 0 || domainRank <= 0) return 0
 
-  const weighted = fit ** FIT_WEIGHT * domainRank ** AUTHORITY_WEIGHT
+  const weighted = fit ** SCORE_WEIGHTS.fit * domainRank ** SCORE_WEIGHTS.authority
 
   return clamp(Math.round(weighted))
 }

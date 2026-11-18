@@ -11,10 +11,20 @@
  * a path and throwing on a response that is merely shaped differently.
  */
 
-import type { ActionTools } from 'deepspace/worker'
+import { REVIEW } from '../config'
 
-/** The one method these helpers need from the action context's `tools`. */
-export type IntegrationCaller = Pick<ActionTools, 'integration'>
+/**
+ * One call to a third-party endpoint through the platform's proxy.
+ *
+ * Both callers in this app match this shape: `tools.integration` inside a
+ * server action, and `ctx.integrations.call` inside a background job. Taking
+ * the function rather than the whole context is what lets the same four
+ * readers below serve both.
+ */
+export type IntegrationCall = (
+  endpoint: string,
+  body?: Record<string, unknown>,
+) => Promise<unknown>
 
 export interface PageContent {
   title: string
@@ -35,9 +45,6 @@ export interface FitJudgement {
   angle: string
 }
 
-/** How much of a scraped page to send to the scoring pass. */
-const PAGE_CHARACTERS_FOR_SCORING = 6000
-
 /**
  * Read the prospect page.
  *
@@ -45,18 +52,14 @@ const PAGE_CHARACTERS_FOR_SCORING = 6000
  * otherwise dominate a short post and make every site on a template look
  * alike to the scorer.
  */
-export async function readPage(tools: IntegrationCaller, url: string): Promise<PageContent> {
-  const response = await tools.integration('firecrawl/scrape', {
-    url,
-    formats: ['markdown'],
-    onlyMainContent: true,
-  })
-
-  if (!response.success) {
-    throw new Error(response.error ?? 'The page could not be read.')
-  }
-
-  const payload = unwrap(response.data)
+export async function readPage(call: IntegrationCall, url: string): Promise<PageContent> {
+  const payload = unwrap(
+    await callProvider(call, 'firecrawl/scrape', {
+      url,
+      formats: ['markdown'],
+      onlyMainContent: true,
+    }, 'The page could not be read.'),
+  )
   const metadata = asRecord(payload?.metadata)
   const markdown = typeof payload?.markdown === 'string' ? payload.markdown : ''
 
@@ -67,7 +70,7 @@ export async function readPage(tools: IntegrationCaller, url: string): Promise<P
   return {
     title: asText(metadata?.title) ?? '',
     summary: asText(metadata?.description) ?? '',
-    text: markdown.slice(0, PAGE_CHARACTERS_FOR_SCORING),
+    text: markdown.slice(0, REVIEW.pageCharactersForScoring),
   }
 }
 
@@ -78,21 +81,17 @@ export async function readPage(tools: IntegrationCaller, url: string): Promise<P
  * it, so a missing profile is worth showing as missing rather than as zero.
  */
 export async function readBacklinkProfile(
-  tools: IntegrationCaller,
+  call: IntegrationCall,
   domain: string,
 ): Promise<BacklinkProfile> {
-  const response = await tools.integration('dataforseo/backlinks-summary', {
-    target: domain,
-    include_subdomains: true,
-    backlinks_status_type: 'live',
-    rank_scale: 'one_hundred',
-  })
-
-  if (!response.success) {
-    throw new Error(response.error ?? 'The backlink profile could not be read.')
-  }
-
-  const summary = unwrap(response.data)
+  const summary = unwrap(
+    await callProvider(call, 'dataforseo/backlinks-summary', {
+      target: domain,
+      include_subdomains: true,
+      backlinks_status_type: 'live',
+      rank_scale: 'one_hundred',
+    }, 'The backlink profile could not be read.'),
+  )
 
   return {
     referringDomains: asNumber(summary?.referring_domains),
@@ -109,13 +108,13 @@ export async function readBacklinkProfile(
  * the cost per card is the thing that matters.
  */
 export async function scoreFit(
-  tools: IntegrationCaller,
+  call: IntegrationCall,
   input: { topic: string; clientSite: string; url: string; page: PageContent },
 ): Promise<FitJudgement> {
-  const response = await tools.integration('anthropic/chat-completion', {
-    model: 'claude-haiku-5-5',
-    max_tokens: 700,
-    temperature: 0.2,
+  const reply = await callProvider(call, 'anthropic/chat-completion', {
+    model: REVIEW.scoringModel,
+    max_tokens: REVIEW.scoringMaxTokens,
+    temperature: REVIEW.scoringTemperature,
     system: SCORING_INSTRUCTIONS,
     messages: [
       {
@@ -132,13 +131,9 @@ export async function scoreFit(
         ].join('\n'),
       },
     ],
-  })
+  }, 'The page could not be scored.')
 
-  if (!response.success) {
-    throw new Error(response.error ?? 'The page could not be scored.')
-  }
-
-  return readJudgement(response.data)
+  return readJudgement(reply)
 }
 
 const SCORING_INSTRUCTIONS = [
@@ -166,22 +161,52 @@ const SCORING_INSTRUCTIONS = [
  * A prospect with no contact is still worth shortlisting.
  */
 export async function findContactEmail(
-  tools: IntegrationCaller,
+  call: IntegrationCall,
   domain: string,
 ): Promise<string | undefined> {
-  const response = await tools.integration('anymailfinder/find-company', {
-    domain,
-    email_type: 'any',
-  })
-
-  if (!response.success) return undefined
-
-  return firstEmailAt(response.data, domain)
+  try {
+    const payload = await callProvider(
+      call,
+      'anymailfinder/find-company',
+      { domain, email_type: 'any' },
+      'The contact lookup failed.',
+    )
+    return firstEmailAt(payload, domain)
+  } catch {
+    // A missing contact is not a failed review, so this step swallows its own
+    // errors rather than losing a page read and a score to them.
+    return undefined
+  }
 }
 
 /* -------------------------------------------------------------------------
- * Reading untyped provider payloads
+ * Calling a provider, and reading its untyped payload
  * ---------------------------------------------------------------------- */
+
+/**
+ * Make one proxied call and hand back the part of the envelope that carries
+ * the provider's answer.
+ *
+ * The envelope reports failure in the body rather than by throwing, so every
+ * caller would otherwise repeat the same check. `whatFailed` is the sentence
+ * that ends up on the card, so it is written for the person reading the board
+ * rather than for a log.
+ */
+async function callProvider(
+  call: IntegrationCall,
+  endpoint: string,
+  body: Record<string, unknown>,
+  whatFailed: string,
+): Promise<unknown> {
+  const envelope = asRecord(await call(endpoint, body))
+
+  if (!envelope || envelope.success === false) {
+    const reason = asText(envelope?.error)
+    throw new Error(reason ? `${whatFailed} ${reason}` : whatFailed)
+  }
+
+  return envelope.data ?? envelope
+}
 
 /**
  * Take the provider's own payload out of the platform's envelope.
