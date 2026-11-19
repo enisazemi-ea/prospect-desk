@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useMutations } from 'deepspace'
 import { ExternalLink, Mail, RotateCw } from 'lucide-react'
 import { Badge, Button, useToast } from '@/components/ui'
+import { REFRESH } from '@/config'
 import { callAction } from '@/lib/call-action'
 import { overallScore } from '@/lib/prospect-score'
 import type { Prospect } from '@/lib/records'
@@ -108,8 +109,9 @@ export function ProspectCard({ id, prospect }: { id: string; prospect: Prospect 
       )}
 
       <footer className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <StatusBadge status={prospect.status} />
+          <ReviewedAt at={prospect.reviewedAt} />
 
           {prospect.contactEmail ? (
             <a
@@ -193,6 +195,32 @@ function Metric({ label, value }: { label: string; value?: number }) {
         {typeof value === 'number' ? value.toLocaleString() : '—'}
       </dd>
     </div>
+  )
+}
+
+/**
+ * When this card was last reviewed.
+ *
+ * The numbers on a card age. A backlink profile pulled two months ago still
+ * reads as fact, which is the worst kind of wrong, so the date is on the card
+ * and anything past the refresh window says so out loud. The overnight task
+ * works through these oldest first.
+ */
+function ReviewedAt({ at }: { at?: string }) {
+  if (!at) return null
+
+  const when = new Date(at)
+  if (Number.isNaN(when.getTime())) return null
+
+  const days = (Date.now() - when.getTime()) / (24 * 60 * 60 * 1000)
+  const stale = days > REFRESH.staleAfterDays
+
+  const date = when.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
+
+  return (
+    <span className="text-xs text-muted-foreground">
+      {stale ? `Reviewed ${date}, due a refresh` : `Reviewed ${date}`}
+    </span>
   )
 }
 

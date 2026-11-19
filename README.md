@@ -30,8 +30,8 @@ and the job:
    pitch angle
 4. looks for a contact address at the domain with Anymail Finder
 
-The card then shows one score, both of its inputs, the reasoning, the angle
-and the contact. The team works the board from there: shortlist, reject, mark
+The card then shows one score, both of its inputs, the reasoning, the angle,
+the contact, and the date it was last reviewed. The team works the board from there: shortlist, reject, mark
 contacted. Records sync, so two people on the same campaign see each other's
 decisions as they land, and a presence line names whoever else has the board
 open.
@@ -108,6 +108,8 @@ A DeepSpace app on Cloudflare Workers.
   running and enqueues a job. `loadSampleCampaign` seeds a new desk.
 - `src/jobs.ts` and `src/server/` — the review itself. Four calls and one
   write, as the app owner.
+- `src/cron.ts` and `src/server/refresh-stale-reviews.ts` — the overnight
+  pass that re-reviews stale prospects, oldest first, capped.
 - `src/config.ts` — every tunable that decides what a review costs.
 - `src/lib/prospect-score.ts` — the score, with its reasoning next to it.
 
@@ -125,11 +127,22 @@ and returns undefined for the rest, rather than trusting a path and throwing
 on a response that is merely shaped differently. Both of those were found by
 running it, not by reading the schemas.
 
+## Keeping it current
+
+A backlink profile pulled in January is not the same profile in March, and a
+page that was on topic can be rewritten or taken down. Left alone a board
+becomes a record of what was true the day somebody pasted it, which is the
+worst kind of wrong because it still looks current.
+
+An overnight task re-reviews what has gone stale. Two rules keep it cheap:
+rejected prospects are skipped, since nobody is going to pitch them whatever
+the numbers say now, and the run is capped at twenty, oldest first, so the
+cost of a night is a number somebody chose rather than a function of how many
+urls were pasted that month. Every card carries the date it was last reviewed,
+and says so when it is past the window.
+
 ## What is unfinished
 
-- **Reviews go stale.** There is no scheduled re-review, so a profile pulled
-  today is the one you see in March. A cron task per campaign is the obvious
-  next thing.
 - **The contact is a company address, not an editor.** `find-decision-maker`
   exists and would be better, but its role categories do not map well to
   blogs, so it would need its own judgement pass.

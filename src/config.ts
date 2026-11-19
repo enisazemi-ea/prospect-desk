@@ -33,6 +33,30 @@ export const REVIEW = {
 } as const
 
 /**
+ * The nightly refresh.
+ *
+ * A backlink profile pulled in January is not the same profile in March, and
+ * a page that was on topic can be rewritten or taken down. Left alone, a board
+ * quietly becomes a record of what was true the day somebody pasted it.
+ *
+ * The cap is the whole design. A refresh costs the same four provider calls as
+ * a first review, so an uncapped task over a few large boards is a bill nobody
+ * chose. Twenty a night is deliberately modest: it keeps the oldest cards
+ * moving without ever being the reason for a surprise.
+ */
+export const REFRESH = {
+  /** A review older than this is worth running again. */
+  staleAfterDays: 30,
+
+  /** The most prospects one nightly run will refresh, across every campaign. */
+  maxPerRun: 20,
+
+  /** Overnight in the time zone the desk works in. */
+  schedule: '0 3 * * *',
+  timezone: 'America/New_York',
+} as const
+
+/**
  * The weighting behind the number on the card.
  *
  * Topical fit and domain authority multiply rather than average, and fit
