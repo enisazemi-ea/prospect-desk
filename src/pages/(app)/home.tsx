@@ -111,7 +111,10 @@ function CampaignRow({
         to={`/campaigns/${id}`}
         className="flex flex-wrap items-baseline justify-between gap-x-8 gap-y-2 py-5 transition-colors hover:bg-accent/60"
       >
-        <div className="min-w-0">
+        {/* flex-1 rather than auto width: the topic is a full sentence, and
+            without it the row sizes to that sentence and pushes the counts
+            onto a second line. */}
+        <div className="min-w-0 flex-1">
           <h2 className="font-display text-xl font-semibold">{campaign.name}</h2>
           <p className="mt-1 truncate text-sm text-muted-foreground">{campaign.topic}</p>
         </div>
@@ -160,7 +163,7 @@ function SampleBoard({ onSignIn }: { onSignIn: () => void }) {
             key={example.name}
             className="flex flex-wrap items-baseline justify-between gap-x-8 gap-y-2 py-5"
           >
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <h2 className="font-display text-xl font-semibold">{example.name}</h2>
               <p className="mt-1 truncate text-sm text-muted-foreground">{example.topic}</p>
             </div>
